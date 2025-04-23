@@ -32,19 +32,28 @@ pragma solidity ^0.8.19;
 
 contract Raffle {
     /* ERRORS */ 
-    error SendMoreToEnterRaffle();
+    error Raffle__SendMoreToEnterRaffle();
 
     uint256 private immutable i_entranceFee;
+    address payable[] private s_players;
+
+    /* EVENTS */
+    event RaffleEnterd(address indexed player);
 
     constructor(uint256 entranceFee) {
         i_entranceFee = entranceFee;
     }
 
     function enterRaffle() public payable {
+        // use require
         // require(msg.value >= i_entranceFee, "Not enough ETH to enter the raffle");
+        // require(msg.value >= i_entranceFee, SendMoreToEnterRaffle()); // v0.8.26
         if (msg.value < i_entranceFee) {
-            revert SendMoreToEnterRaffle();
+            revert Raffle__SendMoreToEnterRaffle();
         }
+        s_players.push(payable(msg.sender));
+        emit RaffleEnterd(msg.sender);
+
     }
 
     function pickWinner() public {}
