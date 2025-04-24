@@ -64,6 +64,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
 
     /* EVENTS */
     event RaffleEnterd(address indexed player);
+    event WinnerPicked(address indexed winner);
 
     // need to expand constructor
     constructor(
@@ -139,6 +140,8 @@ contract Raffle is VRFConsumerBaseV2Plus {
         if (!success) {
             revert Raffle__TransferError();
         }
+
+        emit WinnerPicked(recentWinner);
     }
 
     /**
