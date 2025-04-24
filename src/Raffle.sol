@@ -37,17 +37,19 @@ import {VRFV2PlusClient} from "@chainlink/contracts/src/v0.8/vrf/dev/libraries/V
 contract Raffle is VRFConsumerBaseV2Plus {
     /* ERRORS */
     error Raffle__SendMoreToEnterRaffle();
+    error Raffle__TransferError
 
     uint16 private constant REQUEST_CONFIRMATIONS = 3;
     uint32 private constant NUM_WORDS = 1;
     uint256 private immutable i_entranceFee;
     //@dev the duration of the lottery in seconds
     uint256 private immutable i_interval;
-    uint256 private immutable i_callbackGasLimit;
+    uint32 private immutable i_callbackGasLimit;
     bytes32 private immutable i_keyhash;
-    bytes32 private immutable i_subscriptionId;
+    uint256 private immutable i_subscriptionId;
     address payable[] private s_players;
     uint256 private s_lastTimeStamp;
+    address private s_recentWinner;
 
     /* EVENTS */
     event RaffleEnterd(address indexed player);
@@ -59,7 +61,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
         address vrfCoordinator,
         bytes32 gasLane,
         uint256 subscriptionId,
-        uint256 callbackGasLimit
+        uint32 callbackGasLimit
     ) VRFConsumerBaseV2Plus(vrfCoordinator) {
         i_entranceFee = entranceFee;
         i_interval = interval;
@@ -100,10 +102,19 @@ contract Raffle is VRFConsumerBaseV2Plus {
             extraArgs: VRFV2PlusClient._argsToBytes(VRFV2PlusClient.ExtraArgsV1({nativePayment: false}))
         });
 
-        // requestId = s_vrfCoordinator.requestRandomWords(request);
+        requestId = s_vrfCoordinator.requestRandomWords(request);
     }
 
-    function fulfillRandomWords(uint256 requestId, uint256[] calldata randomWords) internal override {}
+    // call by rawFulfillRandomWords
+    function fulfillRandomWords(uint256 requestId, uint256[] calldata randomWords) internal override {
+        uint256 indexOfWinner = randomWords[0] % s_players.length;
+        address payable recentWinner = s_players[indexOfWinner];
+        s_recentWinner = recentWinner;
+        (bool success, ) = recentWinner.call{value: address(this).balance}("");
+        if (!success) {
+            revert Raffle__TransferError();
+        }
+    }
 
     /**
      * Getter functions
