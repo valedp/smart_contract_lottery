@@ -39,6 +39,8 @@ contract Raffle is VRFConsumerBaseV2Plus {
     error Raffle__SendMoreToEnterRaffle();
     error Raffle__TransferError();
     error Raffle__RaffleNotOpen();
+    Raffle__TransferError Raffle__UpkeepNotNeeded(uint256 balance, uint256 numPlayers, uint256 raffleState);
+
 
 
     /* TYPE DECLARATIONS */
@@ -100,12 +102,31 @@ contract Raffle is VRFConsumerBaseV2Plus {
         emit RaffleEnterd(msg.sender);
     }
 
+    function checkUpkeep(bytes calldata /* checkData */) public view returns (bool upkeepNeeded, bytes memory /* performData */)
+    {
+        bool timeHasPassed = block.timestamp - s_lastTimeStamp >= i_interval;
+        bool isOpen = s_raffleState == RaffleState.OPEN;
+        bool hasBalance = address(this).balance > 0;
+        bool hasPlayers = s_players.length > 0;
+        upkeepNeeded = timeHasPassed && isOpen && hasBalance && hasPlayers; 
+        // "0x0" return null 
+        return (upkeepNeeded, "0x0");
+
+        // We don't use the checkData in this example. The checkData is defined when the Upkeep was registered.
+    }
+
     // 1. get random num
     // 2. call automatically
-    function pickWinner() external returns (uint256 requestId) {
+
+    /**
+     * @dev This is the function that Chainlink VRF will call to get a random winner.
+     * The following shold be true
+     */
+    function performUpkeep(bytes calldata /* performData */) external {
         // check if enough time has passed
-        if (block.timestamp - s_lastTimeStamp < i_interval) {
-            revert();
+        (bool upkeepNeeded, ) = checkUpkeep("");
+        if (!upkeepNeeded) {
+            revert Raffle__UpkeepNotNeeded(address(this).balance, s_players.length, uint256(s_raffleState));
         }
 
         s_raffleState = RaffleState.CALCULATING;
