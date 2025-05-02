@@ -9,7 +9,6 @@ abstract contract CodeConstants {
     uint96 public MOCK_BASE_FEE = 0.25 ether; // 0.25 LINK per request
     uint96 public MOCK_GAS_PRICE_LINK = 1e9; // 1 LINK per gas
 
-
     uint256 public constant ETH_SEPOLIA_CHAIN_ID = 1155511;
     uint256 public constant LOCAL_CHAIN_ID = 31337;
 }
@@ -35,8 +34,8 @@ contract HelperConfig is CodeConstants, Script{
     }
 
     function getConfigByChainId(uint256 chainId) public returns (NetworkConfig memory){
-        if (networkConfigs[chainId].vrfCoordinator != address(0)){
-            return networkConfigs[chainId];
+        if (networkConfig[chainId].vrfCoordinator != address(0)){
+            return networkConfig[chainId];
         } else if (chainId == LOCAL_CHAIN_ID){
             return getOrCreateAnvilEthConfig();
         } else {
@@ -70,7 +69,7 @@ contract HelperConfig is CodeConstants, Script{
         return localNetworkConfig;
     }
 
-    function getSepoliaEthConfig() public pure returns (NetworkCofig){
+    function getSepoliaEthConfig() public pure returns (NetworkConfig){
         return NetworkConfig({
             entranceFee: 0.01 ether,
             interval: 30, // 30 seconds
